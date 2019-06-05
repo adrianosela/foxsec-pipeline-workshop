@@ -81,6 +81,23 @@ public class Workshop implements Serializable {
     }
   }
 
+  /* DoFn with no purpose other than to explore the capabilities of subclasses of DoFn */
+  public static class DescribePipeline extends DoFn<String, String> {
+    private static final long serialVersionUID = 1L;
+
+    @ProcessElement
+    public void processElement(ProcessContext c) {
+      // simply pass the element to output
+      c.output(c.element());
+      // we always have a timestamp associated with every element in a PCollection
+      org.joda.time.Instant timestamp = c.timestamp();
+      System.out.println("timestamp: " + timestamp.toDate().toString());
+      // we always have pipeline options in the ProcessContext
+      PipelineOptions opts = c.getPipelineOptions();
+      System.out.println("full opts: " + opts.toString());
+    }
+  }
+
   /** DoFn to perform extraction of word occurrences from a KV of word-to-count */
   public static class Occurrences extends DoFn<KV<String, Long>, Long> {
     private static final long serialVersionUID = 1L;
@@ -151,6 +168,9 @@ public class Workshop implements Serializable {
 
     // convert Mean's returned Double - to String
     PCollection<String> meanStr = mean.apply("convert mean to string", ParDo.of(new Stringify()));
+
+    // no op to print pipeline details
+    meanStr.apply("describe pipeline", ParDo.of(new DescribePipeline()));
 
     // format-wrap the mean onto a nice output format: "mean value: <VALUE>"
     PCollection<String> meanPretty =
