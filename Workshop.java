@@ -8,6 +8,7 @@ import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.*;
+import org.apache.beam.sdk.transforms.windowing.PaneInfo;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PDone;
@@ -92,6 +93,11 @@ public class Workshop implements Serializable {
       // we always have a timestamp associated with every element in a PCollection
       org.joda.time.Instant timestamp = c.timestamp();
       System.out.println("timestamp: " + timestamp.toDate().toString());
+      // we always have an associated pane
+      // in it we can verify whether the current element is the first, the last,
+      // or otherwise, what is the index of the current element in the window dddd
+      PaneInfo info = c.pane();
+      System.out.println("full pane info: " + info.toString());
       // we always have pipeline options in the ProcessContext
       PipelineOptions opts = c.getPipelineOptions();
       System.out.println("full opts: " + opts.toString());
