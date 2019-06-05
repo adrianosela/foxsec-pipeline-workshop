@@ -5,21 +5,20 @@ import com.mozilla.secops.InputOptions;
 import java.io.IOException;
 import java.io.Serializable;
 import org.apache.beam.sdk.Pipeline;
-import org.apache.beam.sdk.transforms.*;
-import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
+import org.apache.beam.sdk.transforms.*;
+import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PDone;
 
 /**
  * Getting started with Beam workshop pipeline.
  *
- * Taken from https://github.com/mozilla-services/foxsec-pipeline
+ * <p>Taken from https://github.com/mozilla-services/foxsec-pipeline
  *
- * <p>This class  has been adapted for my personal on-boarding to
- * the Apache Beam framework, taking advantage of ameihm0912's workshop
- *
+ * <p>This class has been adapted for my personal on-boarding to the Apache Beam framework, taking
+ * advantage of ameihm0912's workshop
  */
 public class Workshop implements Serializable {
   private static final long serialVersionUID = 1L;
@@ -56,7 +55,8 @@ public class Workshop implements Serializable {
     public void processElement(ProcessContext c) {
       // clean up special characters, make lowercase,
       // and trim whitespace off front and back
-      String cleaned = c.element()
+      String cleaned =
+          c.element()
               .replaceAll("\\.", "")
               .replaceAll(",", "")
               .replaceAll(":", "")
@@ -82,12 +82,12 @@ public class Workshop implements Serializable {
   }
 
   /** DoFn to perform extraction of word occurrences from a KV of word-to-count */
-  public static class Occurrences extends DoFn<KV<String,Long>, Long> {
+  public static class Occurrences extends DoFn<KV<String, Long>, Long> {
     private static final long serialVersionUID = 1L;
 
     @ProcessElement
     public void processElement(ProcessContext c) {
-      KV<String,Long> kv = c.element();
+      KV<String, Long> kv = c.element();
       c.output(kv.getValue());
     }
   }
@@ -102,9 +102,10 @@ public class Workshop implements Serializable {
     }
   }
 
-  /** DoFn to wrap the mean value with the format: "mean value: <VALUE>"  */
+  /** DoFn to wrap the mean value with the format: "mean value: <VALUE>" */
   public static class FormatMeanStr extends DoFn<String, String> {
     private static final long serialVersionUID = 1L;
+
     @ProcessElement
     public void processElement(ProcessContext c) {
       c.output("mean value: <" + c.element() + ">");
@@ -124,20 +125,26 @@ public class Workshop implements Serializable {
     PCollection<String> words = input.apply("get words", ParDo.of(new ExtractWords()));
 
     // count occurrences of words using Beam's Count
-    PCollection<KV<String, Long>> wordCounts = words.apply("use beam's count transform", Count.perElement());
+    PCollection<KV<String, Long>> wordCounts =
+        words.apply("use beam's count transform", Count.perElement());
 
     // format-wrap each KV of word counts onto a single string with format "<WORD> <OCCURRENCES>"
-    PCollection<String> wordCountsFormatted = wordCounts.apply("format-wrap word count", MapElements.via(
-            new SimpleFunction<KV<String,Long>,String>() {
-              private static final long serialVersionUID = 1L;
+    PCollection<String> wordCountsFormatted =
+        wordCounts.apply(
+            "format-wrap word count",
+            MapElements.via(
+                new SimpleFunction<KV<String, Long>, String>() {
+                  private static final long serialVersionUID = 1L;
 
-              public String apply(KV<String,Long> words) {
-                return "<" + words.getValue() + "> <" + words.getKey() + ">";
-              }
-            }));
+                  public String apply(KV<String, Long> words) {
+                    return "<" + words.getValue() + "> <" + words.getKey() + ">";
+                  }
+                }));
 
-    // get an occurrences only PCollection in order to easily calculate Mean using Beam's Mean function
-    PCollection<Long> occurrences = wordCounts.apply("count occurrences", ParDo.of(new Occurrences()));
+    // get an occurrences only PCollection in order to easily calculate Mean using Beam's Mean
+    // function
+    PCollection<Long> occurrences =
+        wordCounts.apply("count occurrences", ParDo.of(new Occurrences()));
 
     // use Beam's mean to calculate the mean
     PCollection<Double> mean = occurrences.apply("compute mean", Mean.<Long>globally());
@@ -146,7 +153,8 @@ public class Workshop implements Serializable {
     PCollection<String> meanStr = mean.apply("convert mean to string", ParDo.of(new Stringify()));
 
     // format-wrap the mean onto a nice output format: "mean value: <VALUE>"
-    PCollection<String> meanPretty = meanStr.apply("add format wrapper to mean", ParDo.of(new FormatMeanStr()));
+    PCollection<String> meanPretty =
+        meanStr.apply("add format wrapper to mean", ParDo.of(new FormatMeanStr()));
 
     // print out things of interest
     // here instead we could be alerting - sending an HTTP request to a service, etc.
